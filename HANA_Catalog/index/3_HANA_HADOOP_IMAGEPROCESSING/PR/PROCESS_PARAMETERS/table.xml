@@ -31,7 +31,7 @@
 			<TrexType>83</TrexType>
 			<MdrsType>0</MdrsType>
 			<Constr>0</Constr>
-			<Offset>24</Offset>
+			<Offset>72</Offset>
 			<Length>10</Length>
 			<Scale>0</Scale>
 			<OrdPos>0</OrdPos>
@@ -143,6 +143,162 @@
 			<Collat></Collat>
 			<FieldId>205</FieldId> 
 			<AttrType>AttributeType[INTEGER]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL1</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>24</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>5</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>206</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL2</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>32</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>6</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>207</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL3</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>40</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>7</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>208</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL4</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>48</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>8</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>209</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL5</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>56</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>9</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>210</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
+			<Group></Group>
+			<IntDigs>0</IntDigs>
+			<FractDigs>0 </FractDigs>
+			<IFlags>1</IFlags>
+			<IParams></IParams>
+			<FuzzyMode>0</FuzzyMode>
+			<MinVal></MinVal>
+			<MaxVal></MaxVal> 
+			<UTFlags>1</UTFlags>
+			<UType>1</UType>
+		</Field>
+		<Field>
+			<Name>RAND_VAL6</Name>
+			<SQLType>7</SQLType>
+			<ABAPType>32</ABAPType>
+			<TrexType>100</TrexType>
+			<MdrsType>0</MdrsType>
+			<Constr>0</Constr>
+			<Offset>64</Offset>
+			<Length>8</Length>
+			<Scale>0</Scale>
+			<OrdPos>10</OrdPos>
+			<IdxInGrp>0</IdxInGrp>
+			<Collat></Collat>
+			<FieldId>211</FieldId> 
+			<AttrType>AttributeType[DOUBLE]</AttrType> 
 			<Group></Group>
 			<IntDigs>0</IntDigs>
 			<FractDigs>0 </FractDigs>
