@@ -1,1 +1,81 @@
-{"properties":{},"description":"","processes":{"saphanaclient1":{"component":"com.sap.hana.client","metadata":{"label":"SAP HANA Client","x":199.99999904632568,"y":12,"height":80,"width":120,"config":{"dsn":"hdb://SYSTEM:Welcome01@ec2-52-51-55-224.eu-west-1.compute.amazonaws.com:30015","initStatements":"","tableColumnTypes":"","tableName":""}}},"graphterminator1":{"component":"com.sap.util.graphTerminator","metadata":{"label":"Graph Terminator","x":383.99999809265137,"y":12,"height":80,"width":120,"config":{}}},"constantgenerator1":{"component":"com.sap.util.constantGenerator","metadata":{"label":"Constant Generator","x":16,"y":12,"height":80,"width":120,"extensible":true,"config":{"content":"call 3_HANA_HADOOP_IMAGEPROCESSING.\"3_HANA_HADOOP_IMAGEPROCESSING::P_CLASSIFY_MATERIAL_APL\"()"}}}},"groups":[],"connections":[{"metadata":{"points":"323.9999990463257,43 351.9999985694885,43 351.9999985694885,52 379.99999809265137,52"},"src":{"port":"out","process":"saphanaclient1"},"tgt":{"port":"stop","process":"graphterminator1"}},{"metadata":{"points":"140,52 167.99999952316284,52 167.99999952316284,34 195.99999904632568,34"},"src":{"port":"out","process":"constantgenerator1"},"tgt":{"port":"insql","process":"saphanaclient1"}}],"inports":{},"outports":{}}
+{
+	"properties": {},
+	"icon": "500px",
+	"description": "HANA Classify procedure",
+	"processes": {
+		"saphanaclient1": {
+			"component": "com.sap.hana.client",
+			"metadata": {
+				"label": "SAP HANA Client",
+				"x": 199.99999904632568,
+				"y": 12,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"dsn": "hdb://SYSTEM:Welcome01@xsahana.sap.com:30015",
+					"initStatements": "",
+					"tableColumnTypes": "MATERIAL_ID NVARCHAR, \t HEAT1 INTEGER, \t HEAT2 INTEGER, \t PRESSMAX INTEGER, PRESSDUR INTEGER",
+					"tableName": "3_HANA_HADOOP_IMAGEPROCESSING.PPARAM",
+					"lineDelimiter": "\\n"
+				}
+			}
+		},
+		"constantgenerator1": {
+			"component": "com.sap.util.constantGenerator",
+			"metadata": {
+				"label": "Constant Generator",
+				"x": 16,
+				"y": 12,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"content": "call \"3_HANA_HADOOP_IMAGEPROCESSING\".\"3_HANA_HADOOP_IMAGEPROCESSING::P_CLASSIFY_MATERIAL_APL\"()",
+					"mode": "once"
+				}
+			}
+		},
+		"graphterminator1": {
+			"component": "com.sap.util.graphTerminator",
+			"metadata": {
+				"label": "Graph Terminator",
+				"x": 533,
+				"y": 61,
+				"height": 80,
+				"width": 120,
+				"config": {}
+			}
+		}
+	},
+	"groups": [],
+	"connections": [
+		{
+			"metadata": {
+				"points": "140,52 167.99999952316284,52 167.99999952316284,34 195.99999904632568,34"
+			},
+			"src": {
+				"port": "out",
+				"process": "constantgenerator1"
+			},
+			"tgt": {
+				"port": "insql",
+				"process": "saphanaclient1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "323.9999990463257,43 426.5,43 426.5,101 529,101"
+			},
+			"src": {
+				"port": "out",
+				"process": "saphanaclient1"
+			},
+			"tgt": {
+				"port": "stop",
+				"process": "graphterminator1"
+			}
+		}
+	],
+	"inports": {},
+	"outports": {}
+}
