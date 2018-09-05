@@ -1,1 +1,220 @@
-{"icon":"500px","iconsrc":"","description":"PredictiveQualityWorkflow","processes":{"workflowtrigger1":{"component":"com.sap.dh.trigger","metadata":{"label":"Workflow Trigger","x":12,"y":72,"height":80,"width":120,"extensible":true,"config":{}}},"pipeline1":{"component":"com.sap.dh.vflowpipeline","metadata":{"label":"Pipeline","x":181,"y":72,"height":80,"width":120,"extensible":true,"config":{"graphName":"triggerPipeCmdExec"}}},"workflowsplit1":{"component":"com.sap.dh.split","metadata":{"label":"Workflow Split","x":365.9999990463257,"y":72,"height":80,"width":120,"extensible":true,"config":{}}},"pipeline2":{"component":"com.sap.dh.vflowpipeline","metadata":{"label":"Pipeline","x":550.9999980926514,"y":12,"height":80,"width":120,"extensible":true,"config":{"graphName":"ImageSensorDataProcessing"}}},"pipeline3":{"component":"com.sap.dh.vflowpipeline","metadata":{"label":"Pipeline","x":550.9999980926514,"y":132,"height":80,"width":120,"extensible":true,"config":{"graphName":"predQualHANA_Single"}}},"pipeline4":{"component":"com.sap.dh.vflowpipeline","metadata":{"label":"Pipeline","x":904.999997138977,"y":72,"height":80,"width":120,"extensible":true,"config":{"graphName":"callHanaClassifyNew"}}},"workflowmergeand1":{"component":"com.sap.dh.logical.AND","metadata":{"label":"Workflow Merge (AND)","x":735.999997138977,"y":72,"height":80,"width":120,"extensible":true,"config":{}}},"workflowterminator1":{"component":"com.sap.dh.terminator","metadata":{"label":"Workflow Terminator","x":1089.9999961853027,"y":72,"height":80,"width":120,"config":{}}}},"groups":[],"connections":[{"metadata":{"points":"136,112 176,112"},"src":{"port":"output","process":"workflowtrigger1"},"tgt":{"port":"input","process":"pipeline1"}},{"metadata":{"points":"305,103 332.99999952316284,103 332.99999952316284,112 360.9999990463257,112"},"src":{"port":"output","process":"pipeline1"},"tgt":{"port":"in","process":"workflowsplit1"}},{"metadata":{"points":"489.9999990463257,103 517.9999985694885,103 517.9999985694885,52 545.9999980926514,52"},"src":{"port":"out1","process":"workflowsplit1"},"tgt":{"port":"input","process":"pipeline2"}},{"metadata":{"points":"489.9999990463257,121 517.9999985694885,121 517.9999985694885,172 545.9999980926514,172"},"src":{"port":"out2","process":"workflowsplit1"},"tgt":{"port":"input","process":"pipeline3"}},{"metadata":{"points":"674.9999980926514,43 702.9999976158142,43 702.9999976158142,103 730.999997138977,103"},"src":{"port":"output","process":"pipeline2"},"tgt":{"port":"input","process":"workflowmergeand1"}},{"metadata":{"points":"674.9999980926514,163 702.9999976158142,163 702.9999976158142,121 730.999997138977,121"},"src":{"port":"output","process":"pipeline3"},"tgt":{"port":"input2","process":"workflowmergeand1"}},{"metadata":{"points":"859.999997138977,112 899.999997138977,112"},"src":{"port":"output","process":"workflowmergeand1"},"tgt":{"port":"input","process":"pipeline4"}},{"metadata":{"points":"1028.999997138977,103 1056.99999666214,103 1056.99999666214,112 1084.9999961853027,112"},"src":{"port":"output","process":"pipeline4"},"tgt":{"port":"stop","process":"workflowterminator1"}}],"inports":{},"outports":{},"properties":{}}
+{
+	"icon": "500px",
+	"iconsrc": "",
+	"description": "PredictiveQualityWorkflow",
+	"processes": {
+		"workflowtrigger1": {
+			"component": "com.sap.dh.trigger",
+			"metadata": {
+				"label": "Workflow Trigger",
+				"x": 12,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {}
+			}
+		},
+		"pipeline1": {
+			"component": "com.sap.dh.vflowpipeline",
+			"metadata": {
+				"label": "Pipeline",
+				"x": 181,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"graphName": "triggerPipeCmdExec"
+				}
+			}
+		},
+		"workflowsplit1": {
+			"component": "com.sap.dh.split",
+			"metadata": {
+				"label": "Workflow Split",
+				"x": 365.9999990463257,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {}
+			}
+		},
+		"pipeline2": {
+			"component": "com.sap.dh.vflowpipeline",
+			"metadata": {
+				"label": "Pipeline",
+				"x": 550.9999980926514,
+				"y": 12,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"graphName": "streamSensorData_python"
+				}
+			}
+		},
+		"pipeline3": {
+			"component": "com.sap.dh.vflowpipeline",
+			"metadata": {
+				"label": "Pipeline",
+				"x": 550.9999980926514,
+				"y": 132,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"graphName": "predQualHANA_Single"
+				}
+			}
+		},
+		"pipeline4": {
+			"component": "com.sap.dh.vflowpipeline",
+			"metadata": {
+				"label": "Pipeline",
+				"x": 904.999997138977,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"graphName": "callHanaClassifyNew"
+				}
+			}
+		},
+		"workflowmergeand1": {
+			"component": "com.sap.dh.logical.AND",
+			"metadata": {
+				"label": "Workflow Merge (AND)",
+				"x": 735.999997138977,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {}
+			}
+		},
+		"workflowterminator1": {
+			"component": "com.sap.dh.terminator",
+			"metadata": {
+				"label": "Workflow Terminator",
+				"x": 1089.9999961853027,
+				"y": 72,
+				"height": 80,
+				"width": 120,
+				"config": {}
+			}
+		}
+	},
+	"groups": [],
+	"connections": [
+		{
+			"metadata": {
+				"points": "136,112 176,112"
+			},
+			"src": {
+				"port": "output",
+				"process": "workflowtrigger1"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "pipeline1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "305,103 332.99999952316284,103 332.99999952316284,112 360.9999990463257,112"
+			},
+			"src": {
+				"port": "output",
+				"process": "pipeline1"
+			},
+			"tgt": {
+				"port": "in",
+				"process": "workflowsplit1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "489.9999990463257,103 517.9999985694885,103 517.9999985694885,52 545.9999980926514,52"
+			},
+			"src": {
+				"port": "out1",
+				"process": "workflowsplit1"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "pipeline2"
+			}
+		},
+		{
+			"metadata": {
+				"points": "489.9999990463257,121 517.9999985694885,121 517.9999985694885,172 545.9999980926514,172"
+			},
+			"src": {
+				"port": "out2",
+				"process": "workflowsplit1"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "pipeline3"
+			}
+		},
+		{
+			"metadata": {
+				"points": "674.9999980926514,43 702.9999976158142,43 702.9999976158142,103 730.999997138977,103"
+			},
+			"src": {
+				"port": "output",
+				"process": "pipeline2"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "workflowmergeand1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "674.9999980926514,163 702.9999976158142,163 702.9999976158142,121 730.999997138977,121"
+			},
+			"src": {
+				"port": "output",
+				"process": "pipeline3"
+			},
+			"tgt": {
+				"port": "input2",
+				"process": "workflowmergeand1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "859.999997138977,112 899.999997138977,112"
+			},
+			"src": {
+				"port": "output",
+				"process": "workflowmergeand1"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "pipeline4"
+			}
+		},
+		{
+			"metadata": {
+				"points": "1028.999997138977,103 1056.99999666214,103 1056.99999666214,112 1084.9999961853027,112"
+			},
+			"src": {
+				"port": "output",
+				"process": "pipeline4"
+			},
+			"tgt": {
+				"port": "stop",
+				"process": "workflowterminator1"
+			}
+		}
+	],
+	"inports": {},
+	"outports": {},
+	"properties": {}
+}
