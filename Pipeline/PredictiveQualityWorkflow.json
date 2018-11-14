@@ -1,14 +1,15 @@
 {
 	"icon": "500px",
 	"iconsrc": "",
+	"properties": {},
 	"description": "PredictiveQualityWorkflow",
 	"processes": {
 		"workflowtrigger1": {
 			"component": "com.sap.dh.trigger",
 			"metadata": {
 				"label": "Workflow Trigger",
-				"x": 12,
-				"y": 72,
+				"x": 13,
+				"y": 67,
 				"height": 80,
 				"width": 120,
 				"extensible": true,
@@ -18,8 +19,8 @@
 		"pipeline1": {
 			"component": "com.sap.dh.vflowpipeline",
 			"metadata": {
-				"label": "Pipeline",
-				"x": 181,
+				"label": "Trigger pipeline",
+				"x": 196.99999904632568,
 				"y": 72,
 				"height": 80,
 				"width": 120,
@@ -33,7 +34,7 @@
 			"component": "com.sap.dh.split",
 			"metadata": {
 				"label": "Workflow Split",
-				"x": 365.9999990463257,
+				"x": 381.99999809265137,
 				"y": 72,
 				"height": 80,
 				"width": 120,
@@ -44,8 +45,8 @@
 		"pipeline2": {
 			"component": "com.sap.dh.vflowpipeline",
 			"metadata": {
-				"label": "Pipeline",
-				"x": 550.9999980926514,
+				"label": "Stream Sensor Data Pipeline",
+				"x": 566.999997138977,
 				"y": 12,
 				"height": 80,
 				"width": 120,
@@ -58,8 +59,8 @@
 		"pipeline3": {
 			"component": "com.sap.dh.vflowpipeline",
 			"metadata": {
-				"label": "Pipeline",
-				"x": 550.9999980926514,
+				"label": "Image Processing Pipeline",
+				"x": 566.999997138977,
 				"y": 132,
 				"height": 80,
 				"width": 120,
@@ -72,8 +73,8 @@
 		"pipeline4": {
 			"component": "com.sap.dh.vflowpipeline",
 			"metadata": {
-				"label": "Pipeline",
-				"x": 904.999997138977,
+				"label": "Classify Quility",
+				"x": 920.9999961853027,
 				"y": 72,
 				"height": 80,
 				"width": 120,
@@ -87,7 +88,7 @@
 			"component": "com.sap.dh.logical.AND",
 			"metadata": {
 				"label": "Workflow Merge (AND)",
-				"x": 735.999997138977,
+				"x": 751.9999961853027,
 				"y": 72,
 				"height": 80,
 				"width": 120,
@@ -99,10 +100,22 @@
 			"component": "com.sap.dh.terminator",
 			"metadata": {
 				"label": "Workflow Terminator",
-				"x": 1089.9999961853027,
-				"y": 72,
+				"x": 1084.9999933242798,
+				"y": 67,
 				"height": 80,
 				"width": 120,
+				"config": {}
+			}
+		},
+		"controlui1": {
+			"component": "demos.ml.ControlUI",
+			"metadata": {
+				"label": "Product Quality Control UI",
+				"x": 921,
+				"y": 186,
+				"height": 80,
+				"width": 120,
+				"ui": "dynpath",
 				"config": {}
 			}
 		}
@@ -111,7 +124,7 @@
 	"connections": [
 		{
 			"metadata": {
-				"points": "136,112 176,112"
+				"points": "137,107 164.5,107 164.5,112 191.99999904632568,112"
 			},
 			"src": {
 				"port": "output",
@@ -124,7 +137,7 @@
 		},
 		{
 			"metadata": {
-				"points": "305,103 332.99999952316284,103 332.99999952316284,112 360.9999990463257,112"
+				"points": "320.9999990463257,103 348.9999985694885,103 348.9999985694885,112 376.99999809265137,112"
 			},
 			"src": {
 				"port": "output",
@@ -137,7 +150,7 @@
 		},
 		{
 			"metadata": {
-				"points": "489.9999990463257,103 517.9999985694885,103 517.9999985694885,52 545.9999980926514,52"
+				"points": "505.99999809265137,103 533.9999976158142,103 533.9999976158142,52 561.999997138977,52"
 			},
 			"src": {
 				"port": "out1",
@@ -150,7 +163,7 @@
 		},
 		{
 			"metadata": {
-				"points": "489.9999990463257,121 517.9999985694885,121 517.9999985694885,172 545.9999980926514,172"
+				"points": "505.99999809265137,121 533.9999976158142,121 533.9999976158142,172 561.999997138977,172"
 			},
 			"src": {
 				"port": "out2",
@@ -163,7 +176,7 @@
 		},
 		{
 			"metadata": {
-				"points": "674.9999980926514,43 702.9999976158142,43 702.9999976158142,103 730.999997138977,103"
+				"points": "690.999997138977,43 718.9999966621399,43 718.9999966621399,103 746.9999961853027,103"
 			},
 			"src": {
 				"port": "output",
@@ -176,7 +189,7 @@
 		},
 		{
 			"metadata": {
-				"points": "674.9999980926514,163 702.9999976158142,163 702.9999976158142,121 730.999997138977,121"
+				"points": "690.999997138977,163 718.9999966621399,163 718.9999966621399,121 746.9999961853027,121"
 			},
 			"src": {
 				"port": "output",
@@ -189,7 +202,7 @@
 		},
 		{
 			"metadata": {
-				"points": "859.999997138977,112 899.999997138977,112"
+				"points": "875.9999961853027,112 915.9999961853027,112"
 			},
 			"src": {
 				"port": "output",
@@ -202,7 +215,7 @@
 		},
 		{
 			"metadata": {
-				"points": "1028.999997138977,103 1056.99999666214,103 1056.99999666214,112 1084.9999961853027,112"
+				"points": "1044.9999961853027,103 1062.5,103 1062.5,107 1079.9999933242798,107"
 			},
 			"src": {
 				"port": "output",
@@ -215,6 +228,5 @@
 		}
 	],
 	"inports": {},
-	"outports": {},
-	"properties": {}
+	"outports": {}
 }
