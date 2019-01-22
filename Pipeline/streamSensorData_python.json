@@ -1,1 +1,313 @@
-{"properties":{},"icon":"500px","description":"","processes":{"constantgenerator1":{"component":"com.sap.util.constantGenerator","metadata":{"label":"Constant Generator","x":28,"y":40,"height":80,"width":120,"extensible":true,"config":{"mode":"pulse"}}},"python2operator1":{"component":"com.sap.system.python2Operator","metadata":{"label":"Python2Operator","x":196,"y":40,"height":80,"width":120,"extensible":true,"config":{"script":"import sys\nimport pyhdfs\nimport numpy as np\nimport re\nimport time\n\nMYCWD = '/process_image/'\nMYCWD_CSV = '/process_sensor_data/'\nPERMDIR = '/images/'\nPERMDIR_CSV = '/sensor_data/'\nCSV_NAME = 'tmpKafka.csv'\n\n#MYCWD = '/Solution/Images/'\n#MYCWD_CSV = '/Solution/csv/'\n#PERMDIR = '/tmp/Images/'\n#PERMDIR_CSV = '/tmp/csv/'\n\nfs = pyhdfs.HdfsClient(hosts='spark-hdfs-adapter:50070', user_name='hdfs')\n\ndef getProdID():\n    filelist = fs.listdir(MYCWD)\n    return filelist\n\ndef parseID(fname):\n    strID = re.findall(\"\\d+\", fname[0])\n    return int(strID[0])\n\ndef getContents(idToRead):\n    csvname =  PERMDIR_CSV+str(idToRead)+'.csv'\n    s = fs.open(csvname).data\n    return s\n\n\n#sys.stdout.write(\"\\n\")\nsys.stdout.flush()\n\ndef on_input(data):\n    LAST_ID = 1093\n    FIRST_ID = 1006\n    \n    flist = getProdID()\n    \n    if (not flist) or (len(flist)>1):\n        idToRead = FIRST_ID\n    else:\n        idToRead = parseID(flist)\n    \n    if idToRead > LAST_ID:\n        idToRead = FIRST_ID\n    \n    streamData = getContents(idToRead)\n\n    api.send(\"output\", streamData)\n\napi.set_port_callback(\"input\", on_input)\n\n# # Basic Example 1\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#     api.send(\"output\", counter)\n#\n# api.set_port_callback(\"input\", on_input)\n\n\n# # Basic Example 2\n# def on_input(data1, data2):\n#     api.send(\"output\", data1 + data2)\n#\n# api.set_port_callback([\"input1\", \"input2\"], on_input)\n\n\n# # Generators\n# counter = 0\n#\n# def gen():\n#     global counter\n#     for i in xrange(0, 3):\n#         api.send(\"output\", counter)\n#         counter += 1\n#\n# api.add_generator(gen)\n# api.add_generator(gen)\n\n\n# # Timer\n# counter = 0\n#\n# def t1():\n#     global counter\n#     api.send(\"output\", counter)\n#     counter += 1\n#\n# api.add_timer(\"1s\", t1)\n\n\n# # Shutdown\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#\n# api.set_port_callback(\"input\", on_input)\n#\n# def shutdown1():\n#     print \"shutdown1: %d\" % counter\n#\n# def shutdown2():\n#     print \"shutdown2: %d\" % counter\n#\n# api.add_shutdown_handler(shutdown1)\n# api.add_shutdown_handler(shutdown2)\n"},"additionalinports":[{"name":"input","type":"string"}],"additionaloutports":[{"name":"output","type":"string"}]}},"tomessageconverter1":{"component":"com.sap.util.toMessageConverter","metadata":{"label":"ToMessage Converter","x":379.9999990463257,"y":40,"height":80,"width":120,"config":{}}},"kafkaproducer1":{"component":"com.sap.kafka.producer","metadata":{"label":"Kafka Producer","x":547.9999990463257,"y":40,"height":80,"width":120,"config":{"brokers":"kafkaserver:9092","topic":"sensor_data_message"}}},"saphanaclient1":{"component":"com.sap.hana.client","metadata":{"label":"SAP HANA Client","x":927.999997138977,"y":32,"height":80,"width":120,"config":{"dsn":"hdb://xsahana.sap.com:30015","initStatements":"","tableColumnTypes":"MATERIAL_ID NVARCHAR, \t HEAT1 INTEGER, \t HEAT2 INTEGER, \t PRESSMAX INTEGER, PRESSDUR INTEGER","tableName":"3_HANA_HADOOP_IMAGEPROCESSING.PPARAM","lineDelimiter":"\\n","user":"SYSTEM","password":"Welcome01"}}},"12multiplexer1":{"component":"com.sap.system.multiplexer.1-2","metadata":{"label":"1:2 Multiplexer","x":743.9999980926514,"y":92,"height":80,"width":120,"extensible":true,"config":{}}},"tostringconverter1":{"component":"com.sap.util.toStringConverter","metadata":{"label":"ToString Converter","x":927.999997138977,"y":152,"height":80,"width":120,"config":{}}},"terminal1":{"component":"com.sap.util.terminal","metadata":{"label":"Terminal","x":1111.9999961853027,"y":152,"height":80,"width":120,"ui":"dynpath","config":{}}},"graphterminator1":{"component":"com.sap.util.graphTerminator","metadata":{"label":"Graph Terminator","x":1111.9999961853027,"y":32,"height":80,"width":120,"config":{}}},"kafkaconsumer21":{"component":"com.sap.kafka.consumer2","metadata":{"label":"Kafka Consumer2","x":559.9999990463257,"y":172,"height":80,"width":120,"config":{"brokers":"kafkaserver:9092","topics":"sensor_data_message"}}}},"groups":[{"name":"group1","nodes":["constantgenerator1","python2operator1","tomessageconverter1","kafkaproducer1"],"metadata":{"description":"group"},"tags":{"python27":"","customPythonQM":""}}],"connections":[{"metadata":{"points":"867.9999980926514,141 895.9999976158142,141 895.9999976158142,201 923.999997138977,201"},"src":{"port":"out2","process":"12multiplexer1"},"tgt":{"port":"inmessage","process":"tostringconverter1"}},{"metadata":{"points":"1051.999997138977,192 1107.9999961853027,192"},"src":{"port":"outstring","process":"tostringconverter1"},"tgt":{"port":"in1","process":"terminal1"}},{"metadata":{"points":"503.9999990463257,80 543.9999990463257,80"},"src":{"port":"out","process":"tomessageconverter1"},"tgt":{"port":"message","process":"kafkaproducer1"}},{"metadata":{"points":"867.9999980926514,123 895.9999976158142,123 895.9999976158142,90 923.999997138977,90"},"src":{"port":"out1","process":"12multiplexer1"},"tgt":{"port":"inmessage2","process":"saphanaclient1"}},{"metadata":{"points":"152,80 192,80"},"src":{"port":"out","process":"constantgenerator1"},"tgt":{"port":"input","process":"python2operator1"}},{"metadata":{"points":"320,80 347.99999952316284,80 347.99999952316284,89 375.9999990463257,89"},"src":{"port":"output","process":"python2operator1"},"tgt":{"port":"instring","process":"tomessageconverter1"}},{"metadata":{"points":"683.9999990463257,212 711.9999985694885,212 711.9999985694885,132 739.9999980926514,132"},"src":{"port":"message","process":"kafkaconsumer21"},"tgt":{"port":"in1","process":"12multiplexer1"}},{"metadata":{"points":"1051.999997138977,81 1079.5,81 1079.5,72 1106.9999961853027,72"},"src":{"port":"outFire","process":"saphanaclient1"},"tgt":{"port":"stop","process":"graphterminator1"}}],"inports":{},"outports":{}}
+{
+    "properties": {},
+    "icon": "500px",
+    "description": "",
+    "processes": {
+        "python2operator1": {
+            "component": "com.sap.system.python2Operator",
+            "metadata": {
+                "label": "Python2Operator",
+                "x": 196,
+                "y": 40,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {
+                    "script": "import sys\nimport pyhdfs\nimport numpy as np\nimport re\nimport time\n\nMYCWD = '/process_image/'\nMYCWD_CSV = '/process_sensor_data/'\nPERMDIR = '/images/'\nPERMDIR_CSV = '/sensor_data/'\nCSV_NAME = 'tmpKafka.csv'\n\n#MYCWD = '/Solution/Images/'\n#MYCWD_CSV = '/Solution/csv/'\n#PERMDIR = '/tmp/Images/'\n#PERMDIR_CSV = '/tmp/csv/'\n\n\nfs = pyhdfs.HdfsClient(hosts='spark-hdfs-adapter:50070', user_name='hdfs')\n\ndef getProdID():\n    filelist = fs.listdir(MYCWD)\n    return filelist\n\ndef parseID(fname):\n    strID = re.findall(\"\\d+\", fname[0])\n    return int(strID[0])\n\ndef getContents(idToRead):\n    csvname =  PERMDIR_CSV+str(idToRead)+'.csv'\n    s = fs.open(csvname).data\n    return s\n\n\n#sys.stdout.write(\"\\n\")\nsys.stdout.flush()\n\ndef on_input(data):\n    LAST_ID = 1093\n    FIRST_ID = 1006\n    \n    flist = getProdID()\n    \n    if (not flist) or (len(flist)>1):\n        idToRead = FIRST_ID\n    else:\n        idToRead = parseID(flist)\n    \n    if idToRead > LAST_ID:\n        idToRead = FIRST_ID\n    \n    streamData = getContents(idToRead)\n\n    api.send(\"output\", streamData)\n\napi.set_port_callback(\"input\", on_input)\n\n# # Basic Example 1\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#     api.send(\"output\", counter)\n#\n# api.set_port_callback(\"input\", on_input)\n\n\n# # Basic Example 2\n# def on_input(data1, data2):\n#     api.send(\"output\", data1 + data2)\n#\n# api.set_port_callback([\"input1\", \"input2\"], on_input)\n\n\n# # Generators\n# counter = 0\n#\n# def gen():\n#     global counter\n#     for i in xrange(0, 3):\n#         api.send(\"output\", counter)\n#         counter += 1\n#\n# api.add_generator(gen)\n# api.add_generator(gen)\n\n\n# # Timer\n# counter = 0\n#\n# def t1():\n#     global counter\n#     api.send(\"output\", counter)\n#     counter += 1\n#\n# api.add_timer(\"1s\", t1)\n\n\n# # Shutdown\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#\n# api.set_port_callback(\"input\", on_input)\n#\n# def shutdown1():\n#     print \"shutdown1: %d\" % counter\n#\n# def shutdown2():\n#     print \"shutdown2: %d\" % counter\n#\n# api.add_shutdown_handler(shutdown1)\n# api.add_shutdown_handler(shutdown2)\n"
+                },
+                "additionalinports": [
+                    {
+                        "name": "input",
+                        "type": "string"
+                    }
+                ],
+                "additionaloutports": [
+                    {
+                        "name": "output",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        "tomessageconverter1": {
+            "component": "com.sap.util.toMessageConverter",
+            "metadata": {
+                "label": "ToMessage Converter",
+                "x": 379.9999990463257,
+                "y": 40,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        },
+        "kafkaproducer1": {
+            "component": "com.sap.kafka.producer",
+            "metadata": {
+                "label": "Kafka Producer",
+                "x": 547.9999990463257,
+                "y": 40,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "brokers": "kafkaserver:9092",
+                    "topic": "sensor_data_message"
+                }
+            }
+        },
+        "readfile1": {
+            "component": "com.sap.storage.read",
+            "metadata": {
+                "label": "Read File",
+                "x": -50,
+                "y": 32,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "service": "hdfs",
+                    "hadoopConnection": {
+                        "connectionProperties": {
+                            "host": "127.0.0.1",
+                            "port": "8020",
+                            "user": "hdfs"
+                        },
+                        "configurationType": "Configuration Manager",
+                        "connectionID": "HDFS"
+                    },
+                    "path": "/process_sensor_data/",
+                    "pattern": ".*csv",
+                    "onlyReadOnChange": true
+                }
+            }
+        },
+        "tostringconverter2": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 106.5,
+                "y": 54,
+                "height": 50,
+                "width": 50,
+                "config": {}
+            }
+        },
+        "saphanaclient1": {
+            "component": "com.sap.hana.client",
+            "metadata": {
+                "label": "SAP HANA Client",
+                "x": 927.999997138977,
+                "y": 32,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "dsn": "hdb://xsahana.sap.com:30015",
+                    "initStatements": "",
+                    "tableColumnTypes": "MATERIAL_ID NVARCHAR, \t HEAT1 INTEGER, \t HEAT2 INTEGER, \t PRESSMAX INTEGER, PRESSDUR INTEGER",
+                    "tableName": "3_HANA_HADOOP_IMAGEPROCESSING.PPARAM",
+                    "lineDelimiter": "\\n",
+                    "user": "SYSTEM",
+                    "password": "Welcome01"
+                }
+            }
+        },
+        "12multiplexer1": {
+            "component": "com.sap.system.multiplexer.1-2",
+            "metadata": {
+                "label": "1:2 Multiplexer",
+                "x": 743.9999980926514,
+                "y": 92,
+                "height": 80,
+                "width": 120,
+                "extensible": true,
+                "config": {}
+            }
+        },
+        "tostringconverter1": {
+            "component": "com.sap.util.toStringConverter",
+            "metadata": {
+                "label": "ToString Converter",
+                "x": 927.999997138977,
+                "y": 152,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        },
+        "terminal1": {
+            "component": "com.sap.util.terminal",
+            "metadata": {
+                "label": "Terminal",
+                "x": 1111.9999961853027,
+                "y": 152,
+                "height": 80,
+                "width": 120,
+                "ui": "dynpath",
+                "config": {}
+            }
+        },
+        "graphterminator1": {
+            "component": "com.sap.util.graphTerminator",
+            "metadata": {
+                "label": "Graph Terminator",
+                "x": 1111.9999961853027,
+                "y": 32,
+                "height": 80,
+                "width": 120,
+                "config": {}
+            }
+        },
+        "kafkaconsumer21": {
+            "component": "com.sap.kafka.consumer2",
+            "metadata": {
+                "label": "Kafka Consumer2",
+                "x": 559.9999990463257,
+                "y": 172,
+                "height": 80,
+                "width": 120,
+                "config": {
+                    "brokers": "kafkaserver:9092",
+                    "topics": "sensor_data_message"
+                }
+            }
+        }
+    },
+    "groups": [
+        {
+            "name": "group1",
+            "nodes": [
+                "python2operator1",
+                "tomessageconverter1",
+                "kafkaproducer1",
+                "readfile1",
+                "tostringconverter2"
+            ],
+            "metadata": {
+                "description": "group"
+            },
+            "tags": {
+                "python27": "",
+                "customPythonQM": ""
+            }
+        }
+    ],
+    "connections": [
+        {
+            "metadata": {
+                "points": "867.9999980926514,141 895.9999976158142,141 895.9999976158142,201 923.999997138977,201"
+            },
+            "src": {
+                "port": "out2",
+                "process": "12multiplexer1"
+            },
+            "tgt": {
+                "port": "inmessage",
+                "process": "tostringconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1051.999997138977,192 1107.9999961853027,192"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter1"
+            },
+            "tgt": {
+                "port": "in1",
+                "process": "terminal1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "503.9999990463257,80 543.9999990463257,80"
+            },
+            "src": {
+                "port": "out",
+                "process": "tomessageconverter1"
+            },
+            "tgt": {
+                "port": "message",
+                "process": "kafkaproducer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "867.9999980926514,123 895.9999976158142,123 895.9999976158142,90 923.999997138977,90"
+            },
+            "src": {
+                "port": "out1",
+                "process": "12multiplexer1"
+            },
+            "tgt": {
+                "port": "inmessage2",
+                "process": "saphanaclient1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "320,80 347.99999952316284,80 347.99999952316284,89 375.9999990463257,89"
+            },
+            "src": {
+                "port": "output",
+                "process": "python2operator1"
+            },
+            "tgt": {
+                "port": "instring",
+                "process": "tomessageconverter1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "683.9999990463257,212 711.9999985694885,212 711.9999985694885,132 739.9999980926514,132"
+            },
+            "src": {
+                "port": "message",
+                "process": "kafkaconsumer21"
+            },
+            "tgt": {
+                "port": "in1",
+                "process": "12multiplexer1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "1051.999997138977,81 1079.5,81 1079.5,72 1106.9999961853027,72"
+            },
+            "src": {
+                "port": "outFire",
+                "process": "saphanaclient1"
+            },
+            "tgt": {
+                "port": "stop",
+                "process": "graphterminator1"
+            }
+        },
+        {
+            "metadata": {
+                "points": "74,63 87.75,63 87.75,70 101.5,70"
+            },
+            "src": {
+                "port": "outFilename",
+                "process": "readfile1"
+            },
+            "tgt": {
+                "port": "ininterface",
+                "process": "tostringconverter2"
+            }
+        },
+        {
+            "metadata": {
+                "points": "160.5,79 175.75,79 175.75,80 191,80"
+            },
+            "src": {
+                "port": "outstring",
+                "process": "tostringconverter2"
+            },
+            "tgt": {
+                "port": "input",
+                "process": "python2operator1"
+            }
+        }
+    ],
+    "inports": {},
+    "outports": {}
+}
