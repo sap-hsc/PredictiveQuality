@@ -1,0 +1,311 @@
+{
+	"properties": {},
+	"icon": "500px",
+	"description": "streamSensorData_python2",
+	"processes": {
+		"python2operator1": {
+			"component": "com.sap.system.python2Operator",
+			"metadata": {
+				"label": "Expose Stream Data",
+				"x": 297,
+				"y": 40,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"script": "import sys\nimport pyhdfs\nimport numpy as np\nimport re\nimport time\n\nMYCWD = '/process_image/'\nMYCWD_CSV = '/process_sensor_data/'\nPERMDIR = '/images/'\nPERMDIR_CSV = '/sensor_data/'\nCSV_NAME = 'tmpKafka.csv'\n\n#MYCWD = '/Solution/Images/'\n#MYCWD_CSV = '/Solution/csv/'\n#PERMDIR = '/tmp/Images/'\n#PERMDIR_CSV = '/tmp/csv/'\n\n\nfs = pyhdfs.HdfsClient(hosts='spark-hdfs-adapter:50070', user_name='hdfs')\n\ndef getProdID():\n    filelist = fs.listdir(MYCWD)\n    return filelist\n\ndef parseID(fname):\n    strID = re.findall(\"\\d+\", fname[0])\n    return int(strID[0])\n\ndef getContents(idToRead):\n    csvname =  PERMDIR_CSV+str(idToRead)+'.csv'\n    s = fs.open(csvname).data\n    return s\n\n\n#sys.stdout.write(\"\\n\")\nsys.stdout.flush()\n\ndef on_input(data):\n    LAST_ID = 1093\n    FIRST_ID = 1006\n    \n    flist = getProdID()\n    \n    if (not flist) or (len(flist)>1):\n        idToRead = FIRST_ID\n    else:\n        idToRead = parseID(flist)\n    \n    if idToRead > LAST_ID:\n        idToRead = FIRST_ID\n    \n    streamData = getContents(idToRead)\n\n    api.send(\"output\", streamData)\n\napi.set_port_callback(\"input\", on_input)\n\n# # Basic Example 1\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#     api.send(\"output\", counter)\n#\n# api.set_port_callback(\"input\", on_input)\n\n\n# # Basic Example 2\n# def on_input(data1, data2):\n#     api.send(\"output\", data1 + data2)\n#\n# api.set_port_callback([\"input1\", \"input2\"], on_input)\n\n\n# # Generators\n# counter = 0\n#\n# def gen():\n#     global counter\n#     for i in xrange(0, 3):\n#         api.send(\"output\", counter)\n#         counter += 1\n#\n# api.add_generator(gen)\n# api.add_generator(gen)\n\n\n# # Timer\n# counter = 0\n#\n# def t1():\n#     global counter\n#     api.send(\"output\", counter)\n#     counter += 1\n#\n# api.add_timer(\"1s\", t1)\n\n\n# # Shutdown\n# counter = 0\n#\n# def on_input(data):\n#     global counter\n#     counter += 1\n#\n# api.set_port_callback(\"input\", on_input)\n#\n# def shutdown1():\n#     print \"shutdown1: %d\" % counter\n#\n# def shutdown2():\n#     print \"shutdown2: %d\" % counter\n#\n# api.add_shutdown_handler(shutdown1)\n# api.add_shutdown_handler(shutdown2)\n"
+				},
+				"additionalinports": [
+					{
+						"name": "input",
+						"type": "string"
+					}
+				],
+				"additionaloutports": [
+					{
+						"name": "output",
+						"type": "string"
+					}
+				]
+			}
+		},
+		"kafkaproducer1": {
+			"component": "com.sap.kafka.producer",
+			"metadata": {
+				"label": "Kafka Producer",
+				"x": 580.9999990463257,
+				"y": 40,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"brokers": "kafkaserver:9092",
+					"topic": "sensor_data_message",
+					"kafkaVersion": "2.2.1"
+				}
+			}
+		},
+		"readfile1": {
+			"component": "com.sap.storage.read",
+			"metadata": {
+				"label": "Read File",
+				"x": 29,
+				"y": 40,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"service": "webhdfs",
+					"hadoopConnection": {
+						"connectionProperties": {
+							"host": "127.0.0.1",
+							"port": "8020",
+							"user": "hdfs"
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "HDFS"
+					},
+					"path": "/process_sensor_data/",
+					"pattern": ".*csv",
+					"onlyReadOnChange": true,
+					"pollPeriodInMs": "1000",
+					"webhdfsConnection": {
+						"connectionProperties": {
+							"host": "localhost",
+							"port": "50070",
+							"protocol": "webhdfs",
+							"rootPath": "",
+							"user": ""
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "WEBHDFS"
+					}
+				}
+			}
+		},
+		"tostringconverter2": {
+			"component": "com.sap.util.toStringConverter",
+			"metadata": {
+				"label": "ToString Converter",
+				"x": 198,
+				"y": 55,
+				"height": 50,
+				"width": 50,
+				"config": {}
+			}
+		},
+		"tomessageconverter1": {
+			"component": "com.sap.util.toMessageConverter",
+			"metadata": {
+				"label": "ToMessage Converter",
+				"x": 481.9999990463257,
+				"y": 55,
+				"height": 50,
+				"width": 50,
+				"config": {}
+			}
+		},
+		"wiretap1": {
+			"component": "com.sap.util.wiretap",
+			"metadata": {
+				"label": "Wiretap",
+				"x": 749.9999990463257,
+				"y": 40,
+				"height": 80,
+				"width": 120,
+				"ui": "dynpath",
+				"config": {}
+			}
+		},
+		"kafkaconsumer21": {
+			"component": "com.sap.kafka.consumer2",
+			"metadata": {
+				"label": "Kafka Consumer2",
+				"x": 761.9999990463257,
+				"y": 172,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"brokers": "kafkaserver:9092",
+					"topics": "sensor_data_message",
+					"groupId": "group1"
+				}
+			}
+		},
+		"kafkaproducer2": {
+			"component": "com.sap.kafka.producer",
+			"metadata": {
+				"label": "Kafka Producer",
+				"x": 1168.9999961853027,
+				"y": 92,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"brokers": "kafkaserver:9092",
+					"topic": "sensor_and_camera_message"
+				}
+			}
+		},
+		"saphanaclient2": {
+			"component": "com.sap.hana.client2",
+			"metadata": {
+				"label": "SAP HANA Client",
+				"x": 946.9999980926514,
+				"y": 92,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"connection": {
+						"connectionProperties": {
+							"additionalHosts": [],
+							"host": "host",
+							"password": "",
+							"port": 9000,
+							"useTLS": false,
+							"user": ""
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "HANADB"
+					},
+					"tableName": "\"3_HANA_HADOOP_IMAGEPROCESSING\".\"PPARAM\"",
+					"tableColumns": [
+						{
+							"name": "MATERIAL_ID",
+							"type": "NVARCHAR",
+							"size": 10
+						},
+						{
+							"name": "HEAT1",
+							"type": "INTEGER"
+						},
+						{
+							"name": "HEAT2",
+							"type": "INTEGER"
+						},
+						{
+							"name": "PRESSMAX",
+							"type": "INTEGER"
+						},
+						{
+							"name": "PRESSDUR",
+							"type": "INTEGER"
+						}
+					]
+				}
+			}
+		}
+	},
+	"groups": [
+		{
+			"name": "group1",
+			"nodes": [
+				"python2operator1",
+				"kafkaproducer1",
+				"readfile1",
+				"tostringconverter2",
+				"tomessageconverter1",
+				"wiretap1"
+			],
+			"metadata": {
+				"description": "Sensor Streams"
+			},
+			"tags": {
+				"python27": "",
+				"customPQD": ""
+			}
+		}
+	],
+	"connections": [
+		{
+			"metadata": {
+				"points": "153,71 193,71"
+			},
+			"src": {
+				"port": "outFilename",
+				"process": "readfile1"
+			},
+			"tgt": {
+				"port": "ininterface",
+				"process": "tostringconverter2"
+			}
+		},
+		{
+			"metadata": {
+				"points": "252,80 292,80"
+			},
+			"src": {
+				"port": "outstring",
+				"process": "tostringconverter2"
+			},
+			"tgt": {
+				"port": "input",
+				"process": "python2operator1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "535.9999990463257,80 575.9999990463257,80"
+			},
+			"src": {
+				"port": "out",
+				"process": "tomessageconverter1"
+			},
+			"tgt": {
+				"port": "message",
+				"process": "kafkaproducer1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "421,80 448.99999952316284,80 448.99999952316284,89 476.9999990463257,89"
+			},
+			"src": {
+				"port": "output",
+				"process": "python2operator1"
+			},
+			"tgt": {
+				"port": "instring",
+				"process": "tomessageconverter1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "885.9999990463257,203 913.9999985694885,203 913.9999985694885,141 941.9999980926514,141"
+			},
+			"src": {
+				"port": "message",
+				"process": "kafkaconsumer21"
+			},
+			"tgt": {
+				"port": "data",
+				"process": "saphanaclient2"
+			}
+		},
+		{
+			"metadata": {
+				"points": "704.9999990463257,80 744.9999990463257,80"
+			},
+			"src": {
+				"port": "markoffsets",
+				"process": "kafkaproducer1"
+			},
+			"tgt": {
+				"port": "in",
+				"process": "wiretap1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "1070.9999980926514,132 1163.9999961853027,132"
+			},
+			"src": {
+				"port": "result",
+				"process": "saphanaclient2"
+			},
+			"tgt": {
+				"port": "message",
+				"process": "kafkaproducer2"
+			}
+		}
+	],
+	"inports": {},
+	"outports": {}
+}
