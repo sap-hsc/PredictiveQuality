@@ -1,0 +1,1086 @@
+{
+	"icon": "500px",
+	"properties": {},
+	"description": "PredQual Analyse Image",
+	"processes": {
+		"python2operator1": {
+			"component": "com.sap.system.python2Operator",
+			"metadata": {
+				"label": "Vectorize Images",
+				"x": 533.999997138977,
+				"y": 41,
+				"height": 80,
+				"width": 120,
+				"extensible": true,
+				"config": {
+					"script": "import time\nimport sys\nimport pyhdfs\nfrom skimage import io\nimport numpy as np\nfrom skimage.color import rgb2gray\nfrom skimage import measure\nfrom skimage.filters import threshold_otsu\nimport sys\nfrom random import random\nfrom operator import add\nimport numpy as np\nimport re\nimport ntpath\n\nfs = pyhdfs.HdfsClient(hosts='spark-hdfs-adapter:50070', user_name='hdfs')\n\ndef parseInputStream(bstr, idx):\n    img_path = bstr.split(\"\\n\")[0]\n    #img_path = bstr[idx].strip()\n    return img_path\n\ndef copyHDFS(fname):\n    fs.copy_to_local(fname, '/tmp/'+ntpath.basename(fname))\n\ndef loadImage(fname):\n    img = io.imread('/tmp/'+ntpath.basename(fname))\n    return img\n\ndef prepareOutput(x, cntr):\n    lMaxlist = ', '.join(map(str, x.localMaxlist))\n    lMaxlist = lMaxlist.replace('[', '')\n    lMaxlist = lMaxlist.replace(']', '')\n    #sys.stdout.write(lMaxlist+'\\n')\n    lMaxlistGE = ', '.join(map(str, x.localGE75maxlist))\n    lMaxlistGE = lMaxlistGE.replace('[', '')\n    lMaxlistGE = lMaxlistGE.replace(']', '')\n    #sys.stdout.write(lMaxlistGE+'\\n')\n    XYVAL = ', '.join(map(str, x.hostSpotXYVALList))\n    XYVAL = XYVAL.replace('[', '')\n    XYVAL = XYVAL.replace(']', '')\n    #sys.stdout.write(XYVAL+'\\n')\n    prID = 'PRHOOD%d'%(cntr)\n    #sys.stdout.write(prID+'\\n')\n    outstring = ''\n    outstring = '%s, %d, %s, %d, %s'%(prID, x.nrLocalMaxima, lMaxlist + ', ' + lMaxlistGE, x.nrHotSpots, XYVAL)\n    return outstring\n\ndef performImageProcessing(img):\n    image_gray = rgb2gray(img.astype(float))\n\n    # Output the contours of the part\n    imscaled = image_gray/max(image_gray.flatten())\n    contours = measure.find_contours(imscaled, 0.6)\n\n    # binarize\n    thresh_min = threshold_otsu(imscaled)\n    binary_min = imscaled > thresh_min\n\n    # perform morphological cleansing\n    from skimage.morphology import binary_closing, erosion, dilation\n    from skimage.morphology import disk, diamond\n    selem = disk(6)\n    closed = binary_closing(binary_min, selem)\n    er1 = erosion(closed, selem)\n    dilated = dilation(er1, selem)\n\n    # find corners using Harris detector\n    from skimage.feature import corner_harris, corner_subpix, corner_peaks\n    coords = corner_peaks(corner_harris(dilated), min_distance=5)\n\n    boxxmin = np.nanmin(coords[:,0])-10\n    boxxmax = np.nanmax(coords[:,0])+10\n\n    boxymin = np.nanmin(coords[:,1])-10\n    boxymax = np.nanmax(coords[:,1])+10\n\n    deltaX = int(np.ceil((boxxmax - boxxmin)/10))\n    deltaY = int(np.ceil((boxymax - boxymin)/10))\n    regmax              = np.zeros(shape = (100,1))\n    regpercGEmax        = np.zeros(shape = (100,1))\n\n    # Calculate local maxima + % elevated pixels\n    for i in range(1,11):\n        for j in range(1,11):\n            regn = imscaled[(boxxmin+(i-1)*deltaX):(boxxmin+(i)*deltaX):(1), (boxymin+(j-1)*deltaY) : (boxymin+(j)*deltaY) : (1)]\n            regmax[(i-1)*10 + j-1]       = max(regn.flatten())\n            tmp = np.float(len(regn[regn > 0.75*regmax[(i-1)*10 + j-1]]))/np.float(deltaX*deltaY)\n            regpercGEmax[(i-1)*10 + j-1] = tmp\n\n    #get hotspot coordinates\n    top5hotspotCoord    = np.zeros(shape = (15,1))\n    for i in range(0,5):\n        contour = contours[i]\n\n        my = int(np.mean(contour[:,1]))\n\n        mx = int(np.mean(contour[:,0]))\n        mm = max((imscaled[(mx-10):(mx+10):(1), (my-10):(my+10):(1)]).flatten())\n        top5hotspotCoord[3*i+0] = mx\n        top5hotspotCoord[3*i+1] = my\n        top5hotspotCoord[3*i+2] = mm\n\n    # Prepare the result for output\n    import collections\n    ResultStruct = collections.namedtuple('ResStruct', ['nrLocalMaxima', 'localMaxlist', 'localGE75maxlist', 'nrHotSpots', 'hostSpotXYVALList'])\n    res = ResultStruct(100, regmax, regpercGEmax, 5, top5hotspotCoord)\n    return res\n\ndef getProdID(fname):\n    ffname = fname.split('/')[2]\n    strID = re.findall(\"\\d+\", ffname)\n    return int(strID[0])\n\n\n\n#time.sleep(10)\nMAXVAL = 1\ni = 0\n\n\ndef on_input(data):\n    fname = data#parseInputStream(data, i)\n    copyHDFS(fname)\n    img = loadImage(fname)\n    #sys.stdout.write(str(i)+\"\\n\")\n    #sys.stdout.write(fname+\"\\n\")\n    outstring = ''\n    outstring = performImageProcessing(img)\n    prodID = getProdID(fname)\n    pstr = prepareOutput(outstring,prodID)\n    api.send(\"output\", api.Message(pstr+'\\n'))\n    #time.sleep(1)\n    \n\napi.set_port_callback(\"filename\", on_input)\n"
+				},
+				"additionalinports": [
+					{
+						"name": "filename",
+						"type": "string"
+					}
+				],
+				"additionaloutports": [
+					{
+						"name": "output",
+						"type": "message"
+					}
+				]
+			}
+		},
+		"readfile1": {
+			"component": "com.sap.storage.read",
+			"metadata": {
+				"label": "Read File",
+				"x": 17,
+				"y": 32,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"path": "/process_image/",
+					"service": "webhdfs",
+					"hadoopConnection": {
+						"connectionProperties": {
+							"host": "127.0.0.1",
+							"port": "8020",
+							"user": "hdfs"
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "HDFS"
+					},
+					"pollPeriodInMs": "1000",
+					"onlyReadOnChange": true,
+					"webhdfsConnection": {
+						"connectionProperties": {
+							"host": "localhost",
+							"port": "50070",
+							"protocol": "webhdfs",
+							"rootPath": "",
+							"user": ""
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "WEBHDFS"
+					}
+				}
+			}
+		},
+		"tostringconverter1": {
+			"component": "com.sap.util.toStringConverter",
+			"metadata": {
+				"label": "ToString Converter",
+				"x": 386.99999809265137,
+				"y": 47,
+				"height": 50,
+				"width": 50,
+				"config": {}
+			}
+		},
+		"wiretap1": {
+			"component": "com.sap.util.wiretap",
+			"metadata": {
+				"label": "Wiretap",
+				"x": 895.9999961853027,
+				"y": 32,
+				"height": 80,
+				"width": 120,
+				"ui": "dynpath",
+				"config": {}
+			}
+		},
+		"wiretap2": {
+			"component": "com.sap.util.wiretap",
+			"metadata": {
+				"label": "Wiretap",
+				"x": 201.99999904632568,
+				"y": 32,
+				"height": 80,
+				"width": 120,
+				"ui": "dynpath",
+				"config": {}
+			}
+		},
+		"saphanaclient1": {
+			"component": "com.sap.hana.client2",
+			"metadata": {
+				"label": "SAP HANA Client",
+				"x": 714,
+				"y": 32,
+				"height": 80,
+				"width": 120,
+				"config": {
+					"connection": {
+						"connectionProperties": {
+							"host": "host",
+							"password": "",
+							"port": 9000,
+							"user": ""
+						},
+						"configurationType": "Configuration Manager",
+						"connectionID": "HANADB"
+					},
+					"tableColumns": [
+						{
+							"name": "prdID",
+							"type": "varchar"
+						},
+						{
+							"name": "nrLockMax",
+							"type": "integer"
+						},
+						{
+							"name": "rasterMax1",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax2",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax3",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax4",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax5",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax6",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax7",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax8",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax9",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax10",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax11",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax12",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax13",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax14",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax15",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax16",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax17",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax18",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax19",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax20",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax21",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax22",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax23",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax24",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax25",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax26",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax27",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax28",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax29",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax30",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax31",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax32",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax33",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax34",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax35",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax36",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax37",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax38",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax39",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax40",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax41",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax42",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax43",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax44",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax45",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax46",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax47",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax48",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax49",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax50",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax51",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax52",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax53",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax54",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax55",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax56",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax57",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax58",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax59",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax60",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax61",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax62",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax63",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax64",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax65",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax66",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax67",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax68",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax69",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax70",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax71",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax72",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax73",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax74",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax75",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax76",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax77",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax78",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax79",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax80",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax81",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax82",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax83",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax84",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax85",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax86",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax87",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax88",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax89",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax90",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax91",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax92",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax93",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax94",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax95",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax96",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax97",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax98",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax99",
+							"type": "float"
+						},
+						{
+							"name": "rasterMax100",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE1",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE2",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE3",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE4",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE5",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE6",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE7",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE8",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE9",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE10",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE11",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE12",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE13",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE14",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE15",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE16",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE17",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE18",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE19",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE20",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE21",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE22",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE23",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE24",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE25",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE26",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE27",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE28",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE29",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE30",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE31",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE32",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE33",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE34",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE35",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE36",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE37",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE38",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE39",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE40",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE41",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE42",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE43",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE44",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE45",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE46",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE47",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE48",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE49",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE50",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE51",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE52",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE53",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE54",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE55",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE56",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE57",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE58",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE59",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE60",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE61",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE62",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE63",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE64",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE65",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE66",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE67",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE68",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE69",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE70",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE71",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE72",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE73",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE74",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE75",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE76",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE77",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE78",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE79",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE80",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE81",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE82",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE83",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE84",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE85",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE86",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE87",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE88",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE89",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE90",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE91",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE92",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE93",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE94",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE95",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE96",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE97",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE98",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE99",
+							"type": "float"
+						},
+						{
+							"name": "rasterPercentageGE100",
+							"type": "float"
+						},
+						{
+							"name": "nrHotSpots",
+							"type": "integer"
+						},
+						{
+							"name": "xcoord1",
+							"type": "float"
+						},
+						{
+							"name": "ycoord1",
+							"type": "float"
+						},
+						{
+							"name": "maxval1",
+							"type": "float"
+						},
+						{
+							"name": "xcoord2",
+							"type": "float"
+						},
+						{
+							"name": "ycoord2",
+							"type": "float"
+						},
+						{
+							"name": "maxval2",
+							"type": "float"
+						},
+						{
+							"name": "xcoord3",
+							"type": "float"
+						},
+						{
+							"name": "ycoord3",
+							"type": "float"
+						},
+						{
+							"name": "maxval3",
+							"type": "float"
+						},
+						{
+							"name": "xcoord4",
+							"type": "float"
+						},
+						{
+							"name": "ycoord4",
+							"type": "float"
+						},
+						{
+							"name": "maxval4",
+							"type": "float"
+						},
+						{
+							"name": "xcoord5",
+							"type": "float"
+						},
+						{
+							"name": "ycoord5",
+							"type": "float"
+						},
+						{
+							"name": "maxval5",
+							"type": "float"
+						}
+					],
+					"tableName": "3_HANA_HADOOP_IMAGEPROCESSING.img_res_hana",
+					"terminateOnError": false
+				}
+			}
+		}
+	},
+	"groups": [
+		{
+			"name": "group1",
+			"nodes": [
+				"python2operator1"
+			],
+			"metadata": {
+				"description": "Image Processing"
+			},
+			"tags": {
+				"python27": "",
+				"customPQD": ""
+			}
+		}
+	],
+	"connections": [
+		{
+			"metadata": {
+				"points": "440.99999809265137,72 485,72 485,81 528.999997138977,81"
+			},
+			"src": {
+				"port": "outstring",
+				"process": "tostringconverter1"
+			},
+			"tgt": {
+				"port": "filename",
+				"process": "python2operator1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "141,63 168.99999952316284,63 168.99999952316284,72 196.99999904632568,72"
+			},
+			"src": {
+				"port": "outFilename",
+				"process": "readfile1"
+			},
+			"tgt": {
+				"port": "in",
+				"process": "wiretap2"
+			}
+		},
+		{
+			"metadata": {
+				"points": "325.9999990463257,72 353.9999985694885,72 353.9999985694885,63 381.99999809265137,63"
+			},
+			"src": {
+				"port": "out",
+				"process": "wiretap2"
+			},
+			"tgt": {
+				"port": "ininterface",
+				"process": "tostringconverter1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "657.999997138977,81 709,81"
+			},
+			"src": {
+				"port": "output",
+				"process": "python2operator1"
+			},
+			"tgt": {
+				"port": "data",
+				"process": "saphanaclient1"
+			}
+		},
+		{
+			"metadata": {
+				"points": "838,72 890.9999961853027,72"
+			},
+			"src": {
+				"port": "result",
+				"process": "saphanaclient1"
+			},
+			"tgt": {
+				"port": "in",
+				"process": "wiretap1"
+			}
+		}
+	],
+	"inports": {},
+	"outports": {}
+}
